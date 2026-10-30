@@ -3,6 +3,9 @@
 # To make your own, copy this to ~/.config/jaunt/themes/<name>.toml, change
 # what you like, and set `theme = "<name>"` under [switcher] in config.toml.
 # Every other colour the switcher uses is worked out from these six.
+#
+# A theme can leave colours out, too: those come from the theme its `base`
+# names, like `base = "nord"`, or else from this one.
 
 # The panel everything lies on.
 background = "#15171c"

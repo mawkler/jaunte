@@ -14,7 +14,7 @@ use std::time::Duration;
 use anyhow::{Context, Result};
 use serde::Deserialize;
 
-use crate::theme::{self, Palette};
+use crate::theme::{self, Palette, Theme};
 
 /// Jaunt's own corner of the user's configuration.
 fn directory() -> Option<PathBuf> {
@@ -221,7 +221,7 @@ impl Config {
             return config;
         };
 
-        let table: toml::Table = match file.parse() {
+        let mut table: toml::Table = match file.parse() {
             Ok(table) => table,
             // Not even TOML, so there are no sections to pick through.
             Err(_) => {
@@ -231,9 +231,23 @@ impl Config {
             }
         };
 
+        // Read on its own, so that a misspelt colour costs the theme rather
+        // than every other setting of the switcher's.
+        let theme = table
+            .get_mut("switcher")
+            .and_then(toml::Value::as_table_mut)
+            .and_then(|switcher| switcher.remove("theme"));
+
         section(&table, "keys", &mut config.keys);
         section(&table, "switcher", &mut config.switcher);
         section(&table, "previews", &mut config.previews);
+
+        if let Some(written) = theme {
+            match theme::named_or_written(written) {
+                Ok(theme) => config.switcher.theme = theme,
+                Err(error) => eprintln!("jaunt: [switcher] theme keeps its default: {error}"),
+            }
+        }
 
         let mut names = BTreeMap::new();
 
@@ -441,9 +455,13 @@ pub(crate) struct Switcher {
     pub(crate) foreground_opacity: Opacity,
     /// The colours it's drawn in: the name of a theme, either the user's own
     /// in `~/.config/jaunt/themes` or one Jaunt comes with, like `default`,
-    /// `light` or `catppuccin-mocha`. Or the path to a theme file.
-    #[serde(default = "default_theme")]
-    pub(crate) theme: String,
+    /// `light` or `catppuccin-mocha`. Or the path to a theme file, or a table
+    /// written like one, which may build on any of those with `base`.
+    #[serde(
+        default = "default_theme",
+        deserialize_with = "theme::named_or_written"
+    )]
+    pub(crate) theme: Theme,
     /// The numbers beside an application's windows.
     #[serde(default)]
     pub(crate) numbers: Numbers,
@@ -613,8 +631,8 @@ fn default_foreground_opacity() -> Opacity {
     Opacity(1.0)
 }
 
-fn default_theme() -> String {
-    "default".to_owned()
+fn default_theme() -> Theme {
+    Theme::named("default")
 }
 
 fn default_action() -> Action {
@@ -845,7 +863,7 @@ mod tests {
 
     #[test]
     fn the_switcher_is_drawn_in_jaunts_own_theme_unless_the_file_names_another() {
-        assert_eq!(config("").switcher.theme, "default");
+        assert_eq!(config("").switcher.theme, Theme::named("default"));
         assert_eq!(config("").palette, Palette::default());
 
         let config = config(
@@ -855,7 +873,74 @@ mod tests {
             "#,
         );
 
-        assert_eq!(config.switcher.theme, "light");
+        assert_eq!(config.switcher.theme, Theme::named("light"));
+    }
+
+    #[test]
+    fn a_theme_can_be_written_in_place_as_a_table_or_inline() {
+        let table = started_with(
+            r##"
+            [switcher.theme]
+            base = "nord"
+            accent = "#ff8800"
+            "##,
+        );
+        let inline = started_with(
+            r##"
+            [switcher]
+            theme = { base = "nord", accent = "#ff8800" }
+            "##,
+        );
+        assert_eq!(table.palette, inline.palette);
+
+        // Nord, but for the one colour.
+        let palette = serde_json::to_value(&table.palette).unwrap();
+        let nord = serde_json::to_value(theme::load(&Theme::named("nord"), None).unwrap()).unwrap();
+
+        assert_eq!(palette["accent"], "#ff8800");
+        assert_ne!(palette["accent"], nord["accent"]);
+        assert_eq!(palette["background"], nord["background"]);
+    }
+
+    #[test]
+    fn a_misspelt_colour_is_named_as_one() {
+        let error = toml::from_str::<Config>(
+            r##"
+            [switcher.theme]
+            acent = "#ff8800"
+            "##,
+        )
+        .expect_err("there's no colour called acent");
+
+        assert!(error.to_string().contains("acent"), "{error}");
+        assert!(error.to_string().contains("accent"), "{error}");
+
+        let error = toml::from_str::<Config>(
+            r#"
+            [switcher]
+            theme = 5
+            "#,
+        )
+        .expect_err("5 is no theme");
+
+        assert!(error.to_string().contains("name of a theme"), "{error}");
+    }
+
+    #[test]
+    fn a_theme_that_makes_no_sense_costs_the_theme_and_nothing_else() {
+        let config = started_with(
+            r##"
+            [switcher]
+            delay = 150
+
+            [switcher.theme]
+            acent = "#ff8800"
+            "##,
+        );
+
+        assert_eq!(config.switcher.delay, 150);
+        assert_eq!(config.switcher.theme, default_theme());
+        assert_eq!(config.palette, Palette::default());
     }
 
     /// The file Jaunt hands out has to say what Jaunt would have done

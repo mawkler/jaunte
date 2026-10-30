@@ -141,13 +141,24 @@ There are multiple built-in themes, including `default`, `light`, `catppuccin`, 
 
 To create your own, put it in `~/.config/jaunt/themes/<name>.toml`, and set `theme = "<name>"` (or a path) in your config. Themes also support hot-reloading.
 
+A theme only needs the colours it changes. The rest come from its `base`, or from `default` if it doesn't have one.
+
 ```toml
+base = "nord"          # optional: the theme to start from
 background = "#15171c" # the panel
 surface = "#20232b"    # the sheet and its tab
 accent = "#6b8cff"     # the selected window
 text = "#c4cad8"       # window titles and keys
 bright = "#eef1f7"     # the heading and the selected window's title
 muted = "#78819a"      # secondary text and hints
+```
+
+A theme can also go straight into your config, written the same way:
+
+```toml
+[switcher.theme]
+base = "nord"
+accent = "#ff8800"
 ```
 
 ## Development
