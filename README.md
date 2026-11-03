@@ -4,6 +4,10 @@ The most efficient way to move between windows. For Hyprland.
 
 ![Screenshot of Jaunt in action](docs/switcher.png)
 
+> *Cogito ergo jaunteo. I think, therefore I jaunte.*
+>
+> — Alfred Bester, *The Stars My Destination*
+
 ## Usage
 
 Jaunt works similarly to classic `Alt + Tab` switchers, but it is scoped to only one program's windows.
@@ -56,6 +60,9 @@ This runs the daemon as a user service, which needs the session in systemd, e.g.
 
 ### Other Linux distros
 
+<details>
+<summary><b>Click to expand</b></summary>
+
 1. Install Jaunt:
 
     ```sh
@@ -69,15 +76,18 @@ This runs the daemon as a user service, which needs the session in systemd, e.g.
 hl.on("hyprland.start", function() hl.exec_cmd("jaunt daemon") end)
 ```
 
+</details>
+
 ## Configuration
 
 Configuration is in `~/.config/jaunt/config.toml`, and it hot-reloads Jaunt on save.
 
-A setting Jaunt can't make sense of never stops it: at startup it says what's wrong and that section falls back to its defaults, so the rest of your configuration still applies. On a reload it keeps the configuration it is already running instead, since a file being saved is a file half-written.
-
-`jaunt default-config` prints a commented file with every setting at its default ([`default-config.toml`](src/config/default-config.toml)), and `jaunt default-config --write` puts it at `~/.config/jaunt/config.toml`, as long as there isn't one there already.
+`jaunt default-config` prints [the default config](src/config/default-config.toml).
 
 Example configuration:
+
+<details>
+<summary><b>Click to expand</b></summary>
 
 ```toml
 [keys]
@@ -93,12 +103,12 @@ w = { cmd = "brave", app_id = "brave-browser" } # when the window class isn't th
 "Shift + a" = "teams"                           # a key may carry modifiers, but then has no Shift to go back with
 
 [switcher]
-delay = 90                # milliseconds Super is held before the switcher appears
-width = "50%"             # of the screen, or pixels
-max_height = "40%"        # previews shrink to fit
-icons = true              # icons rather than initials
-background_opacity = 0.92 # the panel
-foreground_opacity = 1    # the sheet holding the windows
+delay = 90                      # milliseconds Super is held before the switcher appears
+width = "50%"                   # of the screen, or pixels
+max_height = "40%"              # previews shrink to fit
+icons = true                    # icons rather than initials
+background_opacity = 0.92       # the panel
+foreground_opacity = 1          # the sheet holding the windows
 theme = "default"
 numbers = { action = "select" } # or "switch": a number key goes to its window at once
 
@@ -110,38 +120,15 @@ height = 150   # pixels
 brave-browser = "Brave"
 ```
 
-While the switcher is up, Jaunt puts Hyprland in a `jaunt` submap, so the keys it takes are its
-own: `Super + 1` picks a window instead of switching workspace, and your `close` key closes the
-highlighted window rather than the focused one. Everything you've bound comes back the moment the
-switcher closes, and `Escape` always gets out.
-
-That needs the Lua configuration. With the legacy parser, Jaunt can't claim the keys, so give any
-of your own binds that clash with it a guard instead:
-
-```lua
-hl.bind("SUPER + Q", function()
-    if #hl.get_layers({ namespace = "jaunt" }) == 0 then
-        hl.dispatch(hl.dsp.window.close())
-    end
-end)
-```
-
-To blur what shows through the panel, add a layer rule:
-
-```lua
-hl.layer_rule({ match = { namespace = "^jaunt$" }, blur = true, ignore_alpha = 0.1 })
-```
-
-`ignore_alpha` keeps the corners outside the rounded panel sharp, and has to stay below
-`background_opacity`, or nothing is blurred.
+</details>
 
 ### Themes
 
-There are multiple built-in themes, including `default`, `light`, `catppuccin`, `nord`, `one-dark` and `tokyo-night`, which live in [`themes/`](themes).
+The built-in themes live in [`themes/`](themes), and includes `default`, `light`, `catppuccin`, `nord`, `one-dark` and `tokyo-night`.
 
-To create your own, put it in `~/.config/jaunt/themes/<name>.toml`, and set `theme = "<name>"` (or a path) in your config. Themes also support hot-reloading.
+To create your own, put it in `~/.config/jaunt/themes/<name>.toml`, and set `theme = "<name>"` (or a path) in your config.
 
-A theme only needs the colours it changes. The rest come from its `base`, or from `default` if it doesn't have one.
+A theme only needs the colors it changes. The rest come from its `base`, or from `default` if it doesn't have one.
 
 ```toml
 base = "nord"          # optional: the theme to start from
