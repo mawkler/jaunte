@@ -66,6 +66,9 @@ pub(crate) const CLOSE_EVENT: &str = "jaunt:close";
 /// switcher takes stop reaching whatever else the user has put on them.
 const SUBMAP: &str = "jaunt";
 
+/// The namespace of the switcher's layer, as `shell/shell.qml` names it.
+const LAYER: &str = "jaunt";
+
 /// What to dispatch to make Hyprland emit [`CANCEL_EVENT`], for the view to
 /// send when a click puts the switcher away.
 pub(crate) fn cancel_dispatch() -> String {
@@ -819,6 +822,7 @@ impl Binds {
         binds.forget_stale_lua_binds();
         binds.add()?;
         binds.define_submap();
+        binds.blur_panel();
         // A run that died with the switcher up leaves Hyprland in the
         // submap, where almost nothing is bound. Starting again takes the
         // keyboard back.
@@ -972,6 +976,35 @@ impl Binds {
         }
     }
 
+    /// Has Hyprland blur what shows through the switcher's panel.
+    ///
+    /// The layer covers the whole screen, but everything around the panel is
+    /// wholly see-through, so ignoring only what is nearly so blurs the panel
+    /// alone, however see-through the panel itself is.
+    fn blur_panel(&self) {
+        if self.language != ConfigLanguage::Lua {
+            return;
+        }
+
+        // shortcut: each start adds the rule again rather than replacing the
+        // one the last run left. The copies all say the same thing, and a
+        // reload clears them.
+        let command = format!(
+            r#"eval hl.layer_rule({{ match = {{ namespace = "^{LAYER}$" }}, blur = true, ignore_alpha = 0.01 }})"#
+        );
+
+        match request(&command) {
+            Ok(response) if response.trim() == "ok" => {}
+            Ok(response) => eprintln!(
+                "jaunt: what shows through the switcher won't be blurred: {}",
+                response.trim()
+            ),
+            Err(error) => {
+                eprintln!("jaunt: what shows through the switcher won't be blurred: {error:#}");
+            }
+        }
+    }
+
     /// Puts Hyprland in a submap, or takes it back out of one.
     fn submap(&self, name: &str) {
         if self.language != ConfigLanguage::Lua {
@@ -1017,6 +1050,7 @@ impl Binds {
         }
 
         self.define_submap();
+        self.blur_panel();
     }
 
     /// Takes the keybinds away, leaving Hyprland as it was found.
