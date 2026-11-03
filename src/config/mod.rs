@@ -453,6 +453,9 @@ pub(crate) struct Switcher {
     /// their application.
     #[serde(default = "default_foreground_opacity")]
     pub(crate) foreground_opacity: Opacity,
+    /// Whether Hyprland blurs what shows through the panel.
+    #[serde(default = "enabled")]
+    pub(crate) blur: bool,
     /// The colours it's drawn in: the name of a theme, either the user's own
     /// in `~/.config/jaunt/themes` or one Jaunt comes with, like `default`,
     /// `light` or `catppuccin-mocha`. Or the path to a theme file, or a table
@@ -511,6 +514,7 @@ impl Default for Switcher {
             icons: enabled(),
             background_opacity: default_background_opacity(),
             foreground_opacity: default_foreground_opacity(),
+            blur: enabled(),
             theme: default_theme(),
             numbers: Numbers::default(),
         }
@@ -986,6 +990,20 @@ mod tests {
         .expect_err("'wide' is not a size");
 
         assert!(error.to_string().contains("percentage"), "{error}");
+    }
+
+    #[test]
+    fn the_panel_is_blurred_unless_the_file_says_not_to() {
+        assert!(config("").switcher.blur);
+
+        let config = config(
+            r#"
+            [switcher]
+            blur = false
+            "#,
+        );
+
+        assert!(!config.switcher.blur);
     }
 
     #[test]

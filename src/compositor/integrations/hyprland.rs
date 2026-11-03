@@ -672,6 +672,8 @@ pub(crate) struct Binds {
     /// Installed only while the switcher is on screen.
     session: Vec<Bind>,
     language: ConfigLanguage,
+    /// Whether what shows through the panel is blurred.
+    blur: bool,
 }
 
 impl Binds {
@@ -809,6 +811,7 @@ impl Binds {
             language: config_language(),
             binds,
             session,
+            blur: config.switcher.blur,
         };
 
         // Every one of Jaunt's own keys has to go on working inside the
@@ -976,33 +979,39 @@ impl Binds {
         }
     }
 
-    /// Has Hyprland blur what shows through the switcher's panel.
+    /// Has Hyprland blur what shows through the switcher's panel, or stop,
+    /// as the configuration says.
     ///
     /// The layer covers the whole screen, but everything around the panel is
     /// wholly see-through, so ignoring only what is nearly so blurs the panel
     /// alone, however see-through the panel itself is.
+    ///
+    /// Like the binds, the rule is kept by handle in Hyprland's Lua state,
+    /// which outlives the daemon, so a restart turns the same rule on or off
+    /// rather than stacking another.
     fn blur_panel(&self) {
         if self.language != ConfigLanguage::Lua {
             return;
         }
 
-        // shortcut: each start adds the rule again rather than replacing the
-        // one the last run left. The copies all say the same thing, and a
-        // reload clears them.
-        let command = format!(
-            r#"eval hl.layer_rule({{ match = {{ namespace = "^{LAYER}$" }}, blur = true, ignore_alpha = 0.01 }})"#
-        );
+        let command = if self.blur {
+            format!(
+                r#"eval if __jaunt_blur then __jaunt_blur:set_enabled(true) else __jaunt_blur = hl.layer_rule({{ match = {{ namespace = "^{LAYER}$" }}, blur = true, ignore_alpha = 0.01 }}) end"#
+            )
+        } else {
+            "eval if __jaunt_blur then __jaunt_blur:set_enabled(false) end".to_owned()
+        };
 
-        match request(&command) {
-            Ok(response) if response.trim() == "ok" => {}
-            Ok(response) => eprintln!(
-                "jaunt: what shows through the switcher won't be blurred: {}",
-                response.trim()
-            ),
-            Err(error) => {
-                eprintln!("jaunt: what shows through the switcher won't be blurred: {error:#}");
-            }
-        }
+        let refused = match request(&command) {
+            Ok(response) if response.trim() == "ok" => return,
+            Ok(response) => response.trim().to_owned(),
+            Err(error) => format!("{error:#}"),
+        };
+
+        eprintln!(
+            "jaunt: failed to {} what shows through the switcher: {refused}",
+            if self.blur { "blur" } else { "stop blurring" },
+        );
     }
 
     /// Puts Hyprland in a submap, or takes it back out of one.
