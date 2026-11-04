@@ -230,15 +230,23 @@ pub(crate) enum ConfigLanguage {
 }
 
 /// Asks Hyprland which parser it's using, by sending it a `keyword` command
-/// too short to do anything: the Lua parser refuses the command itself, the
-/// legacy one gets as far as complaining about the arguments.
+/// for an option that doesn't exist: the Lua parser refuses the command
+/// itself, the legacy one gets as far as complaining about the option.
+///
+/// How the Lua parser refuses it depends on the version: 0.57.0 says the
+/// command is for non-legacy configurations, 0.57.1 doesn't know the request
+/// at all.
 pub(crate) fn config_language() -> ConfigLanguage {
     static LANGUAGE: OnceLock<ConfigLanguage> = OnceLock::new();
 
-    *LANGUAGE.get_or_init(|| match request("keyword") {
-        Ok(response) if response.contains("non-legacy") => ConfigLanguage::Lua,
+    *LANGUAGE.get_or_init(|| match request("keyword jaunt:probe 0") {
+        Ok(response) if is_lua_refusal(&response) => ConfigLanguage::Lua,
         _ => ConfigLanguage::Legacy,
     })
+}
+
+fn is_lua_refusal(response: &str) -> bool {
+    response.contains("non-legacy") || response.trim() == "unknown request"
 }
 
 /// Whether Jaunt owns a key outright, or shares it with whatever else is
