@@ -85,6 +85,22 @@ pub(crate) const NUMBERED: std::ops::RangeInclusive<usize> = 1..=9;
 /// The Super keys a switch can be confirmed with.
 const SUPER_KEYS: [&str; 2] = ["Super_L", "Super_R"];
 
+/// A key the way the Lua parser is to be given it.
+///
+/// Hyprland 0.57 reads `Super_L` and `Super_R` as one side of the Super
+/// modifier rather than as keys, and a release bind on a modifier alone stays
+/// quiet if any other key is still down when the modifier is let go. A quick
+/// switch lets go of Super a moment before the key that started it, so the
+/// switcher would wait for a release that has already happened. Their keysyms,
+/// written as numbers, are keys like any other.
+fn lua_key(key: &str) -> &str {
+    match key {
+        "Super_L" => "0xffeb",
+        "Super_R" => "0xffec",
+        key => key,
+    }
+}
+
 pub struct Compositor;
 
 /// A window, the way Hyprland's `clients` and `activewindow` describe one.
@@ -395,8 +411,8 @@ impl Bind {
     fn keys(&self, language: ConfigLanguage) -> String {
         match language {
             ConfigLanguage::Legacy => format!("{},{}", self.mods.join(" "), self.key),
-            ConfigLanguage::Lua if self.mods.is_empty() => self.key.clone(),
-            ConfigLanguage::Lua => format!("{} + {}", self.mods.join(" + "), self.key),
+            ConfigLanguage::Lua if self.mods.is_empty() => lua_key(&self.key).to_owned(),
+            ConfigLanguage::Lua => format!("{} + {}", self.mods.join(" + "), lua_key(&self.key)),
         }
     }
 
@@ -1276,7 +1292,7 @@ mod tests {
     fn lua_keeps_hold_of_its_own_binds() {
         let add = confirm_bind(false).add(ConfigLanguage::Lua).join(" ");
 
-        assert!(add.contains(r#"hl.bind("SUPER + Super_L""#), "{add}");
+        assert!(add.contains(r#"hl.bind("SUPER + 0xffeb""#), "{add}");
         assert!(add.contains("set_enabled(true)"), "{add}");
         assert!(!add.contains("unbind"), "{add}");
 
