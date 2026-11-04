@@ -154,14 +154,25 @@ ShellRoot {
 
         // The whole screen, so that a click anywhere away from the panel can
         // put the switcher away. It only covers anything while the switcher
-        // is up, and the panel's own corners stay see-through, which is what
-        // a blur rule's `ignore_alpha` goes by.
+        // is up, and only the panel has what is behind it blurred.
         anchors.top: true
         anchors.bottom: true
         anchors.left: true
         anchors.right: true
 
         visible: root.shown
+
+        // Hyprland blurs what shows through the panel, in the panel's own
+        // rounded shape, for as long as this asks it to. No region at all asks
+        // for no blur.
+        BackgroundEffect.blurRegion: root.settings.blur ? panelBlur : null
+
+        Region {
+            id: panelBlur
+
+            item: switcher.panelItem
+            radius: Theme.panelRadius
+        }
 
         // The pointer's way out, for when the keyboard isn't one. Under the
         // switcher, so that a click landing on the panel is the panel's.

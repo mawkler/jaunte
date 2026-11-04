@@ -71,6 +71,8 @@ pub(crate) struct Settings {
     icons: bool,
     background_opacity: f32,
     foreground_opacity: f32,
+    /// Whether the compositor is asked to blur what shows through the panel.
+    blur: bool,
     /// The theme's colours, which the view works the rest out from.
     palette: Palette,
     cancel_key: String,
@@ -294,6 +296,7 @@ fn settings(config: &Config, fonts: &Fonts) -> Settings {
         icons: config.switcher.icons,
         background_opacity: config.switcher.background_opacity.get(),
         foreground_opacity: config.switcher.foreground_opacity.get(),
+        blur: config.switcher.blur,
         palette: config.palette.clone(),
         cancel_key: keycap_name(&config.keys.cancel),
         close_key: config.keys.close.as_ref().map(keycap_name),
@@ -589,6 +592,22 @@ mod tests {
         assert_eq!(message["type"], "config");
         assert_eq!(message["palette"]["background"], "#15171c");
         assert_eq!(message["palette"]["accent"], "#6b8cff");
+    }
+
+    #[test]
+    fn the_configuration_says_whether_to_blur_behind_the_panel() {
+        let fonts = Fonts {
+            text: None,
+            mono: None,
+        };
+        let mut config = Config::default();
+        let blurred = serde_json::to_value(Message::Config(settings(&config, &fonts))).unwrap();
+
+        config.switcher.blur = false;
+        let clear = serde_json::to_value(Message::Config(settings(&config, &fonts))).unwrap();
+
+        assert_eq!(blurred["blur"], true);
+        assert_eq!(clear["blur"], false);
     }
 
     #[test]

@@ -48,8 +48,8 @@ icons = true
 background_opacity = 0.92
 foreground_opacity = 1
 
-# Blur what shows through the panel. Takes Hyprland's Lua configuration, with
-# blur turned on there.
+# Blur what shows through the panel. Needs Hyprland 0.56 or newer, with blur
+# turned on there (decoration.blur.enabled).
 blur = true
 
 # The colours: one Jaunt comes with, one of your own from

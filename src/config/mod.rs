@@ -453,7 +453,8 @@ pub(crate) struct Switcher {
     /// their application.
     #[serde(default = "default_foreground_opacity")]
     pub(crate) foreground_opacity: Opacity,
-    /// Whether Hyprland blurs what shows through the panel.
+    /// Whether the compositor blurs what shows through the panel, which the
+    /// switcher asks it to through `ext-background-effect-v1`.
     #[serde(default = "enabled")]
     pub(crate) blur: bool,
     /// The colours it's drawn in: the name of a theme, either the user's own

@@ -66,9 +66,6 @@ pub(crate) const CLOSE_EVENT: &str = "jaunt:close";
 /// switcher takes stop reaching whatever else the user has put on them.
 const SUBMAP: &str = "jaunt";
 
-/// The namespace of the switcher's layer, as `shell/shell.qml` names it.
-const LAYER: &str = "jaunt";
-
 /// What to dispatch to make Hyprland emit [`CANCEL_EVENT`], for the view to
 /// send when a click puts the switcher away.
 pub(crate) fn cancel_dispatch() -> String {
@@ -672,8 +669,6 @@ pub(crate) struct Binds {
     /// Installed only while the switcher is on screen.
     session: Vec<Bind>,
     language: ConfigLanguage,
-    /// Whether what shows through the panel is blurred.
-    blur: bool,
 }
 
 impl Binds {
@@ -811,7 +806,6 @@ impl Binds {
             language: config_language(),
             binds,
             session,
-            blur: config.switcher.blur,
         };
 
         // Every one of Jaunt's own keys has to go on working inside the
@@ -825,7 +819,6 @@ impl Binds {
         binds.forget_stale_lua_binds();
         binds.add()?;
         binds.define_submap();
-        binds.blur_panel();
         // A run that died with the switcher up leaves Hyprland in the
         // submap, where almost nothing is bound. Starting again takes the
         // keyboard back.
@@ -979,41 +972,6 @@ impl Binds {
         }
     }
 
-    /// Has Hyprland blur what shows through the switcher's panel, or stop,
-    /// as the configuration says.
-    ///
-    /// The layer covers the whole screen, but everything around the panel is
-    /// wholly see-through, so ignoring only what is nearly so blurs the panel
-    /// alone, however see-through the panel itself is.
-    ///
-    /// Like the binds, the rule is kept by handle in Hyprland's Lua state,
-    /// which outlives the daemon, so a restart turns the same rule on or off
-    /// rather than stacking another.
-    fn blur_panel(&self) {
-        if self.language != ConfigLanguage::Lua {
-            return;
-        }
-
-        let command = if self.blur {
-            format!(
-                r#"eval if __jaunt_blur then __jaunt_blur:set_enabled(true) else __jaunt_blur = hl.layer_rule({{ match = {{ namespace = "^{LAYER}$" }}, blur = true, ignore_alpha = 0.01 }}) end"#
-            )
-        } else {
-            "eval if __jaunt_blur then __jaunt_blur:set_enabled(false) end".to_owned()
-        };
-
-        let refused = match request(&command) {
-            Ok(response) if response.trim() == "ok" => return,
-            Ok(response) => response.trim().to_owned(),
-            Err(error) => format!("{error:#}"),
-        };
-
-        eprintln!(
-            "jaunt: failed to {} what shows through the switcher: {refused}",
-            if self.blur { "blur" } else { "stop blurring" },
-        );
-    }
-
     /// Puts Hyprland in a submap, or takes it back out of one.
     fn submap(&self, name: &str) {
         if self.language != ConfigLanguage::Lua {
@@ -1059,7 +1017,6 @@ impl Binds {
         }
 
         self.define_submap();
-        self.blur_panel();
     }
 
     /// Takes the keybinds away, leaving Hyprland as it was found.

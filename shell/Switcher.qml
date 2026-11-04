@@ -39,6 +39,9 @@ Item {
     // How solid the panel and the sheet on it are, as configured.
     readonly property real backgroundOpacity: settings.backgroundOpacity ?? 1
     readonly property real foregroundOpacity: settings.foregroundOpacity ?? 1
+    // The panel itself, which the window asks to have what shows through it
+    // blurred.
+    readonly property Item panelItem: panel
     readonly property int maxHeight: resolve(settings.maxHeight, screenHeight)
 
     // The room on the sheet under the windows, with the keys that walk them,
