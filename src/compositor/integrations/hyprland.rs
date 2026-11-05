@@ -82,24 +82,8 @@ pub(crate) const SELECT_EVENT: &str = "jaunt:select:";
 /// keyboard can name, which is as many as are worth numbering.
 pub(crate) const NUMBERED: std::ops::RangeInclusive<usize> = 1..=9;
 
-/// The Super keys a switch can be confirmed with.
-const SUPER_KEYS: [&str; 2] = ["Super_L", "Super_R"];
-
-/// A key the way the Lua parser is to be given it.
-///
-/// Hyprland 0.57 reads `Super_L` and `Super_R` as one side of the Super
-/// modifier rather than as keys, and a release bind on a modifier alone stays
-/// quiet if any other key is still down when the modifier is let go. A quick
-/// switch lets go of Super a moment before the key that started it, so the
-/// switcher would wait for a release that has already happened. Their keysyms,
-/// written as numbers, are keys like any other.
-fn lua_key(key: &str) -> &str {
-    match key {
-        "Super_L" => "0xffeb",
-        "Super_R" => "0xffec",
-        key => key,
-    }
-}
+/// The Super keys a switch can be confirmed with, by name and by keysym.
+const SUPER_KEYS: [(&str, &str); 2] = [("Super_L", "0xffeb"), ("Super_R", "0xffec")];
 
 pub struct Compositor;
 
@@ -286,6 +270,28 @@ enum Ownership {
     Shared,
 }
 
+/// How a bind takes part in confirming a switch that Super is let go of
+/// while another key is still down.
+///
+/// Hyprland 0.57 reads `Super_L` and `Super_R` as one side of the Super
+/// modifier rather than as keys, and a release bind on a modifier alone stays
+/// quiet while any other key is down. A quick switch lets go of Super a moment
+/// before the key that started it, so that release is only heard by a bind on
+/// Super's keysym, written as a number so that it counts as a key. Hyprland
+/// then fires that bind instead of any bind on Super alone, the user's own
+/// launcher on a Super tap among them, so it may only be on between a switch
+/// key and the release of Super that ends the switch.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Held {
+    /// Has nothing to do with it.
+    Apart,
+    /// Turns the keysym confirms on, in the same key press that starts or
+    /// steers the switch, so that even the quickest release finds them on.
+    Arms,
+    /// Is one of them: off until armed, and off again once it has confirmed.
+    Confirms,
+}
+
 /// One of the keybinds the daemon installs.
 struct Bind {
     /// Identifies the bind to Hyprland's Lua state across daemon restarts,
@@ -301,6 +307,7 @@ struct Bind {
     role: String,
     flags: Flags,
     ownership: Ownership,
+    held: Held,
     /// Whether something else was bound to this key when Jaunt started. A
     /// shared key that was occupied can't have Jaunt's bind taken off it
     /// again without taking the other one too, so Jaunt leaves its own
@@ -355,10 +362,21 @@ impl Bind {
             // which is what lets a restart reuse a bind instead of stacking a
             // second one on the same key.
             ConfigLanguage::Lua => {
+                let event = format!(r#"hl.dsp.event("{}")"#, self.event);
+                let action = match self.held {
+                    Held::Apart => event,
+                    Held::Arms => format!(
+                        "function() hl.dispatch({event}) {} end",
+                        turn_held_confirms(true)
+                    ),
+                    Held::Confirms => format!(
+                        "function() hl.dispatch({event}) {} end",
+                        turn_held_confirms(false)
+                    ),
+                };
                 let bind = format!(
-                    r#"hl.bind("{}", hl.dsp.event("{}"){})"#,
+                    r#"hl.bind("{}", {action}{})"#,
                     self.keys(language),
-                    self.event,
                     self.flags.options()
                 );
 
@@ -369,6 +387,12 @@ impl Bind {
                     // not inert: calling it takes the whole compositor down.
                     Ownership::Exclusive => format!(
                         r#"if e then e.bind:remove() __jaunt["{name}"] = nil end for n, v in pairs(__jaunt) do if v.keys == "{keys}" then v.bind:remove() __jaunt[n] = nil end end hl.unbind("{keys}") __jaunt["{name}"] = {{ bind = {bind}, shared = false, keys = "{keys}" }}"#,
+                        keys = self.keys(language),
+                        name = self.lua_name(),
+                    ),
+                    // Off until a switch arms it, however the last run left it.
+                    Ownership::Shared if self.held == Held::Confirms => format!(
+                        r#"if e then e.bind:set_enabled(false) else local b = {bind} if b then b:set_enabled(false) __jaunt["{name}"] = {{ bind = b, shared = true, held = true, keys = "{keys}" }} end end"#,
                         keys = self.keys(language),
                         name = self.lua_name(),
                     ),
@@ -411,8 +435,8 @@ impl Bind {
     fn keys(&self, language: ConfigLanguage) -> String {
         match language {
             ConfigLanguage::Legacy => format!("{},{}", self.mods.join(" "), self.key),
-            ConfigLanguage::Lua if self.mods.is_empty() => lua_key(&self.key).to_owned(),
-            ConfigLanguage::Lua => format!("{} + {}", self.mods.join(" + "), lua_key(&self.key)),
+            ConfigLanguage::Lua if self.mods.is_empty() => self.key.clone(),
+            ConfigLanguage::Lua => format!("{} + {}", self.mods.join(" + "), self.key),
         }
     }
 
@@ -496,6 +520,12 @@ impl Flags {
     }
 }
 
+/// Lua that turns the keysym confirms on or off, whichever run of the daemon
+/// made them.
+fn turn_held_confirms(on: bool) -> String {
+    format!("for _, e in pairs(__jaunt or {{}}) do if e.held then e.bind:set_enabled({on}) end end")
+}
+
 /// The binds for one steering key.
 ///
 /// Super is held for the whole of an ordinary switch, so the key is bound with
@@ -521,6 +551,7 @@ fn session_binds(name: &str, key: &Key, event: &str) -> Vec<Bind> {
                 // behind, which the next run clears.
                 flags: Flags::default(),
                 ownership: Ownership::Shared,
+                held: Held::Apart,
                 occupied: false,
             }
         })
@@ -558,6 +589,7 @@ fn cancel_binds(keys: &Keys) -> Vec<Bind> {
             ..Flags::default()
         },
         ownership: Ownership::Shared,
+        held: Held::Apart,
         occupied: false,
     }]
 }
@@ -700,6 +732,8 @@ impl Binds {
     /// and one that starts another copy of the application — plus the ones
     /// that confirm a switch when Super is released.
     pub(crate) fn install(config: &Config) -> Result<Self> {
+        let language = config_language();
+
         let switches = config.keys.apps.iter().flat_map(|(key, target)| {
             let id = key.id();
             let mut mods = vec!["SUPER".to_owned()];
@@ -713,6 +747,7 @@ impl Binds {
                 role: format!("the key for {}", target.app),
                 flags: Flags::default(),
                 ownership: Ownership::Exclusive,
+                held: Held::Arms,
                 occupied: false,
             };
 
@@ -727,6 +762,7 @@ impl Binds {
                 role: format!("the key for {}, backwards", target.app),
                 flags: Flags::default(),
                 ownership: Ownership::Exclusive,
+                held: Held::Arms,
                 occupied: false,
             });
 
@@ -743,16 +779,17 @@ impl Binds {
                 role: format!("the key for a new {}", target.app),
                 flags: Flags::default(),
                 ownership: Ownership::Exclusive,
+                held: Held::Apart,
                 occupied: false,
             };
 
             std::iter::once(forward).chain(backward).chain([launch])
         });
 
-        let confirms = SUPER_KEYS.iter().map(|key| Bind {
-            name: format!("confirm:{key}"),
+        let confirm = |name: String, key: &str, held: Held| Bind {
+            name,
             mods: vec!["SUPER".to_owned()],
-            key: (*key).to_owned(),
+            key: key.to_owned(),
             event: CONFIRM_EVENT.to_owned(),
             role: "confirming a switch".to_owned(),
             flags: Flags {
@@ -765,7 +802,16 @@ impl Binds {
                 ..Flags::default()
             },
             ownership: Ownership::Shared,
+            held,
             occupied: false,
+        };
+
+        // The legacy parser hears Super let go whatever else is down.
+        let confirms = SUPER_KEYS.iter().flat_map(|(name, keysym)| {
+            let held = (language == ConfigLanguage::Lua)
+                .then(|| confirm(format!("confirm-held:{name}"), keysym, Held::Confirms));
+
+            std::iter::once(confirm(format!("confirm:{name}"), name, Held::Apart)).chain(held)
         });
 
         let steering = [
@@ -827,7 +873,7 @@ impl Binds {
         let binds = forwards.into_iter().chain(backwards).collect();
 
         let mut binds = Self {
-            language: config_language(),
+            language,
             binds,
             session,
         };
@@ -1168,6 +1214,7 @@ mod tests {
             role: "the key for ghostty".to_owned(),
             flags: Flags::default(),
             ownership: Ownership::Exclusive,
+            held: Held::Arms,
             occupied: false,
         }
     }
@@ -1186,7 +1233,17 @@ mod tests {
                 ..Flags::default()
             },
             ownership: Ownership::Shared,
+            held: Held::Apart,
             occupied,
+        }
+    }
+
+    fn held_confirm_bind() -> Bind {
+        Bind {
+            name: "confirm-held:Super_L".to_owned(),
+            key: "0xffeb".to_owned(),
+            held: Held::Confirms,
+            ..confirm_bind(false)
         }
     }
 
@@ -1292,7 +1349,7 @@ mod tests {
     fn lua_keeps_hold_of_its_own_binds() {
         let add = confirm_bind(false).add(ConfigLanguage::Lua).join(" ");
 
-        assert!(add.contains(r#"hl.bind("SUPER + 0xffeb""#), "{add}");
+        assert!(add.contains(r#"hl.bind("SUPER + Super_L""#), "{add}");
         assert!(add.contains("set_enabled(true)"), "{add}");
         assert!(!add.contains("unbind"), "{add}");
 
@@ -1301,6 +1358,45 @@ mod tests {
 
         assert!(remove.contains("set_enabled(false)"), "{remove}");
         assert!(!remove.contains("unbind"), "{remove}");
+    }
+
+    #[test]
+    fn a_switch_key_arms_the_held_confirms_in_the_press_that_starts_the_switch() {
+        let add = letter_bind().add(ConfigLanguage::Lua).join(" ");
+
+        assert!(
+            add.contains(
+                r#"function() hl.dispatch(hl.dsp.event("jaunt:switch:t")) for _, e in pairs(__jaunt or {}) do if e.held then e.bind:set_enabled(true) end end end"#
+            ),
+            "{add}"
+        );
+
+        // Only that one: the confirm on Super's name stays on its own.
+        let confirm = confirm_bind(false).add(ConfigLanguage::Lua).join(" ");
+
+        assert!(
+            confirm.contains(r#"hl.dsp.event("jaunt:confirm"),"#),
+            "{confirm}"
+        );
+    }
+
+    #[test]
+    fn a_held_confirm_is_only_ever_turned_on_by_a_switch_key() {
+        let add = held_confirm_bind().add(ConfigLanguage::Lua).join(" ");
+
+        assert!(add.contains(r#"hl.bind("SUPER + 0xffeb""#), "{add}");
+        assert!(add.contains("held = true"), "{add}");
+        // Made off, and left off by a restart that finds it.
+        assert!(add.contains("if e then e.bind:set_enabled(false)"), "{add}");
+        assert!(add.contains("b:set_enabled(false)"), "{add}");
+        assert!(!add.contains("set_enabled(true)"), "{add}");
+        // And once it has confirmed, it turns itself off again.
+        assert!(
+            add.contains(
+                r#"function() hl.dispatch(hl.dsp.event("jaunt:confirm")) for _, e in pairs(__jaunt or {}) do if e.held then e.bind:set_enabled(false) end end end"#
+            ),
+            "{add}"
+        );
     }
 
     #[test]
