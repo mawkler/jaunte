@@ -70,6 +70,11 @@
                 rust-analyzer
                 pre-commit
                 rustPackages.clippy
+                # Draws the switcher for a daemon started with `cargo run`.
+                # It can only load the system's graphics driver while this
+                # nixpkgs is at least as new as the system's, so keep the lock
+                # up to date.
+                quickshell
               ])
               ++ buildInputs pkgs;
             RUST_SRC_PATH = pkgs.rustPlatform.rustLibSrc;
