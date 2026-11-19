@@ -10,25 +10,24 @@ The most efficient way to move between windows. For Hyprland.
 
 ## Usage
 
-Jaunt works similarly to classic `Alt + Tab` switchers, but it is scoped to only one program's windows.
+Jaunt works similarly to classic `Alt + Tab` switchers, but it is scoped to only one program's windows at a time. To switch to a window:
 
-1. To switch to a window, press `Super + <key>`, where `<key>` is configured per program by you, for example:
+1. Press `Super + <key>`, where `<key>` is configured per program by you, for example:
 
-    - `Super + t`: Terminal
-    - `Super + w`: Web browser
-    - `Super + s`: Spotify
-    - etc...
+   - `Super + t`: **T**erminal
+   - `Super + w`: **W**eb browser
+   - `Super + s`: **S**potify
+   - etc...
 
-2. Keep holding down the `Super` to see all windows of `<key>`'s program (if it's not running it gets launched)
-3. Keep tapping `<key>` to cycle the focused window
-4. Or press `Super + <number>` to go straight to a window, using the numbers shown beside them (windows 1-9, and only when the program has more than one)
-5. Release `Super` to go to the currently selected window
-
-Clicking anywhere outside the switcher closes it, which is the way out if a keybind ever isn't.
+2. Keep holding down the `Super`, and tap `<key>` again to cycle to that program's next window
+3. Release `Super` to go to the selected window
 
 ## Installation
 
 ### NixOS
+
+<details>
+<summary><b>Click to expand</b></summary>
 
 ```nix
 # flake.nix
@@ -57,6 +56,8 @@ Clicking anywhere outside the switcher closes it, which is the way out if a keyb
 ```
 
 This runs the daemon as a user service, which needs the session in systemd, e.g. `programs.hyprland.withUWSM = true`. Without `settings` it reads `~/.config/jaunt/config.toml` (which supports hot-reloading). See [Configuration](#configuration) for mor info.
+
+</details>
 
 ### Other Linux distros
 
