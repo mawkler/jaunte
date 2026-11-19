@@ -2,7 +2,7 @@
 //! every other.
 //!
 //! A theme is a file of colours, picked by name: one of the user's own from
-//! `~/.config/jaunt/themes`, or one of those Jaunt comes with. The
+//! `~/.config/jaunte/themes`, or one of those Jaunte comes with. The
 //! configuration can also write one out in place, as a table. A colour a
 //! theme leaves out is that of the theme it builds on, its `base`, or else
 //! the default theme's.
@@ -27,7 +27,7 @@ macro_rules! themes {
 /// configuration doesn't say.
 const DEFAULT: &str = "default";
 
-/// The themes Jaunt comes with, by name.
+/// The themes Jaunte comes with, by name.
 const BUILT_IN: &[(&str, &str)] = themes![
     // keep-sorted start
     "catppuccin-frappe",
@@ -68,9 +68,9 @@ impl Default for Palette {
         let (_, text) = BUILT_IN
             .iter()
             .find(|(name, _)| *name == DEFAULT)
-            .expect("Jaunt ships a theme called 'default'");
+            .expect("Jaunte ships a theme called 'default'");
 
-        toml::from_str(text).expect("Jaunt's default theme sets every colour")
+        toml::from_str(text).expect("Jaunte's default theme sets every colour")
     }
 }
 
@@ -81,7 +81,7 @@ impl Default for Palette {
 #[serde(deny_unknown_fields)]
 pub(crate) struct Theme {
     /// The theme a colour this one leaves out comes from, by name or path.
-    /// Without one, that's Jaunt's default theme.
+    /// Without one, that's Jaunte's default theme.
     base: Option<String>,
     background: Option<Colour>,
     surface: Option<Colour>,
@@ -202,7 +202,7 @@ impl TryFrom<String> for Colour {
 
 /// The colours of `theme`, and of the themes it builds on. Those are found
 /// by name: the user's own by that name, from `directory`, or else the one
-/// Jaunt comes with. A name with a `/` in it is the path to a theme file
+/// Jaunte comes with. A name with a `/` in it is the path to a theme file
 /// instead.
 ///
 /// # Errors
@@ -224,7 +224,7 @@ fn find(name: &str, directory: Option<&Path>) -> Result<(String, String)> {
     if let Some(path) = &path {
         match std::fs::read_to_string(path) {
             Ok(text) => return Ok((text, path.display().to_string())),
-            // Not one of the user's own, but it may be one Jaunt comes with.
+            // Not one of the user's own, but it may be one Jaunte comes with.
             Err(error) if error.kind() == std::io::ErrorKind::NotFound && !name.contains('/') => {}
             Err(error) => {
                 return Err(error)
@@ -243,12 +243,12 @@ fn find(name: &str, directory: Option<&Path>) -> Result<(String, String)> {
             });
 
             format!(
-                "there's no theme called '{name}': {looked}Jaunt's own are {}",
+                "there's no theme called '{name}': {looked}Jaunte's own are {}",
                 built_in.join(", ")
             )
         })?;
 
-    Ok(((*text).to_owned(), format!("jaunt's {name} theme")))
+    Ok(((*text).to_owned(), format!("jaunte's {name} theme")))
 }
 
 #[cfg(test)]
@@ -257,7 +257,7 @@ mod tests {
 
     /// A directory of themes for one test, emptied first.
     fn themes(test: &str, files: &[(&str, &str)]) -> PathBuf {
-        let directory = std::env::temp_dir().join(format!("jaunt-themes-{test}"));
+        let directory = std::env::temp_dir().join(format!("jaunte-themes-{test}"));
         let _ = std::fs::remove_dir_all(&directory);
         std::fs::create_dir_all(&directory).expect("failed to make a themes directory");
 
@@ -278,7 +278,7 @@ mod tests {
     }
 
     #[test]
-    fn the_themes_jaunt_comes_with_set_every_colour() {
+    fn the_themes_jaunte_comes_with_set_every_colour() {
         for (name, text) in BUILT_IN {
             toml::from_str::<Palette>(text).unwrap_or_else(|error| panic!("{name}: {error}"));
         }
@@ -353,7 +353,7 @@ mod tests {
     }
 
     #[test]
-    fn a_theme_that_isnt_there_says_where_jaunt_looked() {
+    fn a_theme_that_isnt_there_says_where_jaunte_looked() {
         let directory = themes("missing", &[]);
         let error = named("dracula", Some(&directory)).expect_err("there's no dracula");
         let error = format!("{error:#}");

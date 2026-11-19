@@ -296,7 +296,7 @@ mod tests {
     /// Two ghostty windows and one brave window, most recently used first.
     fn windows() -> Vec<Window> {
         vec![
-            window("1", "com.mitchellh.ghostty", "ghostty: jaunt"),
+            window("1", "com.mitchellh.ghostty", "ghostty: jaunte"),
             window("2", "brave-browser", "Hyprland Wiki"),
             window("3", "com.mitchellh.ghostty", "ghostty: notes"),
         ]
@@ -365,7 +365,7 @@ mod tests {
 
     #[test]
     fn a_focused_window_hands_over_to_the_next_one() {
-        let focused = window("1", "com.mitchellh.ghostty", "ghostty: jaunt");
+        let focused = window("1", "com.mitchellh.ghostty", "ghostty: jaunte");
 
         assert_eq!(session(Some(&focused)).selected_window().id, "3");
     }
@@ -422,7 +422,7 @@ mod tests {
 
     #[test]
     fn switching_back_to_the_focused_group_highlights_the_focused_window() {
-        let focused = window("1", "com.mitchellh.ghostty", "ghostty: jaunt");
+        let focused = window("1", "com.mitchellh.ghostty", "ghostty: jaunte");
         let mut session = session(Some(&focused));
 
         assert_eq!(session.selected_window().id, "3");
@@ -470,7 +470,7 @@ mod tests {
 
     #[test]
     fn going_backwards_from_a_focused_window_picks_the_one_before_it() {
-        let focused = window("1", "com.mitchellh.ghostty", "ghostty: jaunt");
+        let focused = window("1", "com.mitchellh.ghostty", "ghostty: jaunte");
         let groups = group_windows(windows());
         let session = Session::new(
             groups,

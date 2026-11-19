@@ -2,7 +2,7 @@
 //@ pragma Env QSG_USE_SIMPLE_ANIMATION_DRIVER=1
 //@ pragma Env QT_WAYLAND_DISABLE_WINDOWDECORATION=1
 
-// Jaunt's switcher, as its daemon describes it.
+// Jaunte's switcher, as its daemon describes it.
 //
 // The daemon decides everything and says so over a socket, one line of JSON
 // at a time. This only draws what it is told, and moves smoothly between one
@@ -63,7 +63,7 @@ ShellRoot {
     }
 
     Socket {
-        path: Quickshell.env("JAUNT_VIEW_SOCKET") || ""
+        path: Quickshell.env("JAUNTE_VIEW_SOCKET") || ""
         connected: path !== ""
 
         parser: SplitParser {
@@ -89,7 +89,7 @@ ShellRoot {
         try {
             message = JSON.parse(line);
         } catch (error) {
-            console.warn("jaunt: unreadable message:", line);
+            console.warn("jaunte: unreadable message:", line);
             return;
         }
 
@@ -142,7 +142,7 @@ ShellRoot {
         }
 
         WlrLayershell.layer: WlrLayer.Overlay
-        WlrLayershell.namespace: "jaunt"
+        WlrLayershell.namespace: "jaunte"
         // The switcher never takes the keyboard: it would become the focused
         // surface, and Hyprland would hand focus back to whatever had it when
         // the switcher went away — undoing the switch. Its keys arrive as
@@ -216,7 +216,7 @@ ShellRoot {
         screen: window.screen
 
         WlrLayershell.layer: WlrLayer.Overlay
-        WlrLayershell.namespace: "jaunt-splash"
+        WlrLayershell.namespace: "jaunte-splash"
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
         exclusionMode: ExclusionMode.Ignore
 

@@ -8,9 +8,9 @@ use std::path::PathBuf;
     arg_required_else_help = true,
     subcommand_negates_reqs = true,
     after_help = "Examples:\
-        \n  jaunt ghostty \
-        \n  jaunt ghostty com.mitchellh.ghostty \
-        \n  jaunt daemon \
+        \n  jaunte ghostty \
+        \n  jaunte ghostty com.mitchellh.ghostty \
+        \n  jaunte daemon \
         "
 )]
 /// Run-or-raise for Hyprland and Niri
@@ -42,14 +42,14 @@ pub(crate) enum Command {
     /// bindings on them keep working.
     Daemon {
         /// Configuration file to read instead of
-        /// `$XDG_CONFIG_HOME/jaunt/config.toml`.
+        /// `$XDG_CONFIG_HOME/jaunte/config.toml`.
         #[arg(long, value_name = "PATH")]
         config: Option<PathBuf>,
     },
 
     /// Print a configuration file with every setting at its default.
     DefaultConfig {
-        /// Write it to `$XDG_CONFIG_HOME/jaunt/config.toml` rather than
+        /// Write it to `$XDG_CONFIG_HOME/jaunte/config.toml` rather than
         /// printing it, as long as there isn't one there already.
         #[arg(long)]
         write: bool,

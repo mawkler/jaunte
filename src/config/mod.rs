@@ -1,7 +1,7 @@
 //! The configuration file: which key targets which application, which keys
 //! steer the switcher once it's up, and the few knobs it exposes.
 //!
-//! Everything has a default, so Jaunt runs without a configuration file at
+//! Everything has a default, so Jaunte runs without a configuration file at
 //! all. Writing one replaces the defaults it mentions and leaves the rest.
 
 use std::collections::BTreeMap;
@@ -16,16 +16,16 @@ use serde::Deserialize;
 
 use crate::theme::{self, Palette, Theme};
 
-/// Jaunt's own corner of the user's configuration.
+/// Jaunte's own corner of the user's configuration.
 fn directory() -> Option<PathBuf> {
     let config_home = std::env::var_os("XDG_CONFIG_HOME")
         .map(PathBuf::from)
         .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".config")))?;
 
-    Some(config_home.join("jaunt"))
+    Some(config_home.join("jaunte"))
 }
 
-/// The configuration Jaunt ships: every setting, written out at its default,
+/// The configuration Jaunte ships: every setting, written out at its default,
 /// with what each one does beside it.
 const EXAMPLE: &str = include_str!("default-config.toml");
 
@@ -89,7 +89,7 @@ pub(crate) fn themes_directory() -> Option<PathBuf> {
 #[derive(Debug, Default, PartialEq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct Config {
-    /// Every key Jaunt binds.
+    /// Every key Jaunte binds.
     #[serde(default)]
     pub(crate) keys: Keys,
     /// How the switcher behaves and how big it is.
@@ -145,7 +145,7 @@ where
             true
         }
         Err(error) => {
-            eprintln!("jaunt: [{name}] keeps its defaults: {error}");
+            eprintln!("jaunte: [{name}] keeps its defaults: {error}");
 
             false
         }
@@ -202,7 +202,7 @@ impl Config {
         match Self::load(path) {
             Ok(config) => config,
             Err(error) => {
-                eprintln!("jaunt: {error:#}");
+                eprintln!("jaunte: {error:#}");
 
                 Self::recover(path)
             }
@@ -225,7 +225,7 @@ impl Config {
             Ok(table) => table,
             // Not even TOML, so there are no sections to pick through.
             Err(_) => {
-                eprintln!("jaunt: every setting is at its default until that is fixed");
+                eprintln!("jaunte: every setting is at its default until that is fixed");
 
                 return config;
             }
@@ -245,7 +245,7 @@ impl Config {
         if let Some(written) = theme {
             match theme::named_or_written(written) {
                 Ok(theme) => config.switcher.theme = theme,
-                Err(error) => eprintln!("jaunt: [switcher] theme keeps its default: {error}"),
+                Err(error) => eprintln!("jaunte: [switcher] theme keeps its default: {error}"),
             }
         }
 
@@ -257,8 +257,8 @@ impl Config {
 
         config.palette = theme::load(&config.switcher.theme, themes_directory().as_deref())
             .unwrap_or_else(|error| {
-                eprintln!("jaunt: {error:#}");
-                eprintln!("jaunt: the switcher keeps its own colours");
+                eprintln!("jaunte: {error:#}");
+                eprintln!("jaunte: the switcher keeps its own colours");
 
                 Palette::default()
             });
@@ -266,7 +266,7 @@ impl Config {
         config
     }
 
-    /// The application the key Jaunt named `id` targets, if any.
+    /// The application the key Jaunte named `id` targets, if any.
     pub(crate) fn target(&self, id: &str) -> Option<&Target> {
         self.keys
             .apps
@@ -322,7 +322,7 @@ impl From<Entry> for Target {
     }
 }
 
-/// Every key Jaunt binds: one per application, plus the ones that steer a
+/// Every key Jaunte binds: one per application, plus the ones that steer a
 /// switch already in progress.
 ///
 /// The steering keys are bound only while the switcher is on screen, so they
@@ -406,7 +406,7 @@ impl TryFrom<String> for Key {
 }
 
 impl Key {
-    /// The key as one word, for the event Jaunt asks Hyprland to emit when
+    /// The key as one word, for the event Jaunte asks Hyprland to emit when
     /// it's pressed: `shift+a`, or just `a`.
     pub(crate) fn id(&self) -> String {
         let mut id: Vec<_> = self.mods.iter().map(|m| m.to_lowercase()).collect();
@@ -458,7 +458,7 @@ pub(crate) struct Switcher {
     #[serde(default = "enabled")]
     pub(crate) blur: bool,
     /// The colours it's drawn in: the name of a theme, either the user's own
-    /// in `~/.config/jaunt/themes` or one Jaunt comes with, like `default`,
+    /// in `~/.config/jaunte/themes` or one Jaunte comes with, like `default`,
     /// `light` or `catppuccin-mocha`. Or the path to a theme file, or a table
     /// written like one, which may build on any of those with `base`.
     #[serde(
@@ -754,7 +754,7 @@ mod tests {
     /// Writes a configuration somewhere of its own and reads it the way the
     /// daemon starts up with it.
     fn started_with(file: &str) -> Config {
-        let directory = std::env::temp_dir().join("jaunt-recover");
+        let directory = std::env::temp_dir().join("jaunte-recover");
         let _ = std::fs::create_dir_all(&directory);
 
         let path = directory.join(format!("{:x}.toml", file.len() * 31 + file.len()));
@@ -867,7 +867,7 @@ mod tests {
     }
 
     #[test]
-    fn the_switcher_is_drawn_in_jaunts_own_theme_unless_the_file_names_another() {
+    fn the_switcher_is_drawn_in_jauntes_own_theme_unless_the_file_names_another() {
         assert_eq!(config("").switcher.theme, Theme::named("default"));
         assert_eq!(config("").palette, Palette::default());
 
@@ -948,11 +948,11 @@ mod tests {
         assert_eq!(config.palette, Palette::default());
     }
 
-    /// The file Jaunt hands out has to say what Jaunt would have done
+    /// The file Jaunte hands out has to say what Jaunte would have done
     /// anyway, or it teaches the user something untrue the first time a
     /// default changes.
     #[test]
-    fn the_configuration_jaunt_ships_sets_everything_to_its_default() {
+    fn the_configuration_jaunte_ships_sets_everything_to_its_default() {
         assert_eq!(config(EXAMPLE), Config::default());
     }
 

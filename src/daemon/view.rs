@@ -181,7 +181,7 @@ impl View {
         let (shell, connections) = match Quickshell::start() {
             Ok((shell, connections)) => (Some(shell), Some(connections)),
             Err(error) => {
-                eprintln!("jaunt: the switcher can't be shown: {error:#}");
+                eprintln!("jaunte: the switcher can't be shown: {error:#}");
                 (None, None)
             }
         };
@@ -282,7 +282,7 @@ impl View {
 
         match serde_json::to_string(message) {
             Ok(line) => shell.send(line),
-            Err(error) => eprintln!("jaunt: failed to describe the switcher: {error}"),
+            Err(error) => eprintln!("jaunte: failed to describe the switcher: {error}"),
         }
     }
 }
@@ -470,7 +470,7 @@ mod tests {
 
     fn session() -> Session {
         let windows = vec![
-            window("0x1", "com.mitchellh.ghostty", "jaunt", Some((1600, 1000))),
+            window("0x1", "com.mitchellh.ghostty", "jaunte", Some((1600, 1000))),
             window("0x2", "brave-browser", "Hyprland Wiki", Some((1000, 1000))),
             window("0x3", "com.mitchellh.ghostty", "", None),
             window("0x4", "zen", "Notes", None),
@@ -516,7 +516,7 @@ mod tests {
 
         assert_eq!(scene.target, "com.mitchellh.ghostty");
         assert_eq!(scene.selected, "0x1");
-        assert_eq!(scene.subject, "jaunt");
+        assert_eq!(scene.subject, "jaunte");
         assert_eq!(scene.cycle_key.as_deref(), Some("T"));
     }
 
@@ -563,12 +563,12 @@ mod tests {
     fn messages_are_tagged_by_type() {
         let select = Message::Select {
             id: "0x1".to_owned(),
-            subject: "jaunt".to_owned(),
+            subject: "jaunte".to_owned(),
         };
 
         assert_eq!(
             serde_json::to_string(&select).unwrap(),
-            r#"{"type":"select","id":"0x1","subject":"jaunt"}"#
+            r#"{"type":"select","id":"0x1","subject":"jaunte"}"#
         );
         assert_eq!(
             serde_json::to_string(&Message::Show).unwrap(),

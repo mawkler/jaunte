@@ -1,8 +1,8 @@
-# Jaunt
+# Jaunte
 
 The most efficient way to move between windows. For Hyprland.
 
-![Screenshot of Jaunt in action](docs/switcher.png)
+![Screenshot of Jaunte in action](docs/switcher.png)
 
 > *Cogito ergo jaunteo. I think, therefore I jaunte.*
 >
@@ -10,7 +10,7 @@ The most efficient way to move between windows. For Hyprland.
 
 ## Usage
 
-Jaunt works similarly to classic `Alt + Tab` switchers, but it is scoped to only one program's windows at a time. To switch to a window:
+Jaunte works similarly to classic `Alt + Tab` switchers, but it is scoped to only one program's windows at a time. To switch to a window:
 
 1. Press `Super + <key>`, where `<key>` is configured per program by you, for example:
 
@@ -32,16 +32,16 @@ Jaunt works similarly to classic `Alt + Tab` switchers, but it is scoped to only
 ```nix
 # flake.nix
 {
-  inputs.jaunt.url = "github:mawkler/jaunt";
+  inputs.jaunte.url = "github:mawkler/jaunte";
 }
 ```
 
 ```nix
 # ...then in your NixOS configuration:
 {
-  imports = [ inputs.jaunt.nixosModules.default ];
+  imports = [ inputs.jaunte.nixosModules.default ];
 
-  services.jaunt = {
+  services.jaunte = {
     enable = true;
     # If you prefer configuring with Nix (doesn't hot-reload)
     # settings = {
@@ -55,7 +55,7 @@ Jaunt works similarly to classic `Alt + Tab` switchers, but it is scoped to only
 }
 ```
 
-This runs the daemon as a user service, which needs the session in systemd, e.g. `programs.hyprland.withUWSM = true`. Without `settings` it reads `~/.config/jaunt/config.toml` (which supports hot-reloading). See [Configuration](#configuration) for mor info.
+This runs the daemon as a user service, which needs the session in systemd, e.g. `programs.hyprland.withUWSM = true`. Without `settings` it reads `~/.config/jaunte/config.toml` (which supports hot-reloading). See [Configuration](#configuration) for mor info.
 
 </details>
 
@@ -64,26 +64,26 @@ This runs the daemon as a user service, which needs the session in systemd, e.g.
 <details>
 <summary><b>Click to expand</b></summary>
 
-1. Install Jaunt:
+1. Install Jaunte:
 
     ```sh
-    git clone https://github.com/mawkler/jaunt
-    cargo install --path jaunt
+    git clone https://github.com/mawkler/jaunte
+    cargo install --path jaunte
     ```
 
 2. Add this to your `~/.config/hypr/hyprland.lua`:
 
 ```lua
-hl.on("hyprland.start", function() hl.exec_cmd("jaunt daemon") end)
+hl.on("hyprland.start", function() hl.exec_cmd("jaunte daemon") end)
 ```
 
 </details>
 
 ## Configuration
 
-Configuration is in `~/.config/jaunt/config.toml`, and it hot-reloads Jaunt on save.
+Configuration is in `~/.config/jaunte/config.toml`, and it hot-reloads Jaunte on save.
 
-`jaunt default-config` prints [the default config](src/config/default-config.toml).
+`jaunte default-config` prints [the default config](src/config/default-config.toml).
 
 Example configuration:
 
@@ -127,7 +127,7 @@ brave-browser = "Brave"
 
 The built-in themes live in [`themes/`](themes), and includes `default`, `light`, `catppuccin`, `nord`, `one-dark` and `tokyo-night`.
 
-To create your own, put it in `~/.config/jaunt/themes/<name>.toml`, and set `theme = "<name>"` (or a path) in your config.
+To create your own, put it in `~/.config/jaunte/themes/<name>.toml`, and set `theme = "<name>"` (or a path) in your config.
 
 A theme only needs the colors it changes. The rest come from its `base`, or from `default` if it doesn't have one.
 
@@ -157,7 +157,7 @@ To set up the development environment (requires [Nix](https://nixos.org/download
 nix develop
 ```
 
-The switcher's QML in `shell/` is built into the binary. `JAUNT_SHELL=$PWD/shell jaunt daemon` runs it from the checkout instead, reloading on every save.
+The switcher's QML in `shell/` is built into the binary. `JAUNTE_SHELL=$PWD/shell jaunte daemon` runs it from the checkout instead, reloading on every save.
 
 ## AI disclosure
 

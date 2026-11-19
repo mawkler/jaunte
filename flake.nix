@@ -35,7 +35,7 @@
           in
           naersk-lib.buildPackage {
             src = ./.;
-            meta.mainProgram = "jaunt";
+            meta.mainProgram = "jaunte";
             meta.license = pkgs.lib.licenses.gpl3Plus;
             nativeBuildInputs = with pkgs; [ pkg-config ];
             buildInputs = buildInputs pkgs;
@@ -43,14 +43,14 @@
       });
 
       nixosModules = {
-        jaunt = import ./nix/nixos-module.nix self;
-        default = self.nixosModules.jaunt;
+        jaunte = import ./nix/nixos-module.nix self;
+        default = self.nixosModules.jaunte;
       };
 
       apps = forAllSystems (system: {
         default = {
           type = "app";
-          program = "${self.packages.${system}.default}/bin/jaunt";
+          program = "${self.packages.${system}.default}/bin/jaunte";
         };
       });
 

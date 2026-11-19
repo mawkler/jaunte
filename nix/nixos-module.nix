@@ -8,15 +8,15 @@ self:
 }:
 
 let
-  cfg = config.services.jaunt;
+  cfg = config.services.jaunte;
   toml = pkgs.formats.toml { };
-  configFile = toml.generate "jaunt-config.toml" cfg.settings;
+  configFile = toml.generate "jaunte-config.toml" cfg.settings;
   configured = cfg.settings != { };
 in
 {
-  options.services.jaunt = {
+  options.services.jaunte = {
     enable = lib.mkEnableOption ''
-      jaunt, run-or-raise window switching for Hyprland.
+      jaunte, run-or-raise window switching for Hyprland.
 
       The daemon runs as a user service started by `graphical-session.target`,
       so the session has to reach systemd: `programs.hyprland.withUWSM` does
@@ -27,8 +27,8 @@ in
     package = lib.mkOption {
       type = lib.types.package;
       default = self.packages.${pkgs.stdenv.hostPlatform.system}.default;
-      defaultText = lib.literalExpression "jaunt.packages.\${system}.default";
-      description = "The Jaunt package to run.";
+      defaultText = lib.literalExpression "jaunte.packages.\${system}.default";
+      description = "The Jaunte package to run.";
     };
 
     settings = lib.mkOption {
@@ -51,11 +51,11 @@ in
         }
       '';
       description = ''
-        Jaunt's configuration, written to the Nix store and given to the
+        Jaunte's configuration, written to the Nix store and given to the
         daemon with `--config`.
 
         Left empty, the daemon reads each user's own
-        `$XDG_CONFIG_HOME/jaunt/config.toml` instead, which is the one to
+        `$XDG_CONFIG_HOME/jaunte/config.toml` instead, which is the one to
         use if you want to edit it without rebuilding.
       '';
     };
@@ -64,9 +64,9 @@ in
   config = lib.mkIf cfg.enable {
     environment.systemPackages = [ cfg.package ];
 
-    systemd.user.services.jaunt = {
+    systemd.user.services.jaunte = {
       description = "Run-or-raise window switching for Hyprland";
-      documentation = [ "https://github.com/mawkler/jaunt" ];
+      documentation = [ "https://github.com/mawkler/jaunte" ];
 
       # The switcher is only useful with a compositor, and goes when it does.
       bindsTo = [ "graphical-session.target" ];
@@ -74,9 +74,9 @@ in
       wantedBy = [ "graphical-session.target" ];
 
       # The switcher is drawn by Quickshell, which the daemon looks for on
-      # PATH. It comes from the system's own packages rather than Jaunt's:
+      # PATH. It comes from the system's own packages rather than Jaunte's:
       # anything that draws has to match the system's graphics drivers. The
-      # profiles are what the applications Jaunt starts are installed in.
+      # profiles are what the applications Jaunte starts are installed in.
       path = [
         pkgs.quickshell
         # gsettings, which the daemon asks for the fonts GTK applications use.
@@ -96,7 +96,7 @@ in
       serviceConfig = {
         ExecStart = lib.concatStringsSep " " (
           [
-            "${cfg.package}/bin/jaunt"
+            "${cfg.package}/bin/jaunte"
             "daemon"
           ]
           ++ lib.optionals configured [

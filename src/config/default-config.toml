@@ -1,9 +1,9 @@
-# Jaunt's configuration, with every setting at its default.
+# Jaunte's configuration, with every setting at its default.
 #
-# `jaunt default-config --write` puts a copy of this at ~/.config/jaunt/config.toml.
+# `jaunte default-config --write` puts a copy of this at ~/.config/jaunte/config.toml.
 # Saving that file applies it straight away; nothing needs restarting.
 #
-# Jaunt binds nothing until [keys.apps] says so, so that is the one part
+# Jaunte binds nothing until [keys.apps] says so, so that is the one part
 # worth filling in before anything else.
 
 [keys]
@@ -52,8 +52,8 @@ foreground_opacity = 1
 # turned on there (decoration.blur.enabled).
 blur = true
 
-# The colours: one Jaunt comes with, one of your own from
-# ~/.config/jaunt/themes, or the path to a theme file. Or the colours
+# The colours: one Jaunte comes with, one of your own from
+# ~/.config/jaunte/themes, or the path to a theme file. Or the colours
 # themselves, written like a theme file, where `base` is the theme those
 # left out come from:
 #
