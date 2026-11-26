@@ -12,15 +12,29 @@ The most efficient way to move between windows. For Hyprland.
 
 Jaunte works similarly to classic `Alt + Tab` switchers, but it is scoped to only one program's windows at a time. To switch to a window:
 
-1. Press `Super + <key>`, where `<key>` is configured per program by you, for example:
+1. Press `Super + <key>`, where `<key>` is the program to jump to, configured by you. For example:
 
    - `Super + t`: **T**erminal
    - `Super + w`: **W**eb browser
    - `Super + s`: **S**potify
    - etc...
 
-2. Keep holding down the `Super`, and tap `<key>` again to cycle to that program's next window
+2. Keep holding down `Super` and tap `<key>` again to cycle to that program's next window
 3. Release `Super` to go to the selected window
+
+## Motivation
+
+The goal of Jaunte is to make it effortless to switch between windows in a keyboard-centric way. "Take me to window X".
+
+The good thing with `Alt + Tab` switchers is that they make it very easy to switch to your most recent windows. But they don't scale that well when you have a lot of windows open. The more windows, the more times you need to press `Tab` to get to less recent windows. Moreover, with a lot of windows you have to hunt-and-peck and search with your eyes for the right window to land on. Because Jaunt scopes window switching to one program, it significantly dampens that growth.
+
+### Why not use Hyprland workspaces?
+
+*Why not just put your web browser on workspace 1, and press `Super + 1` to switch to it?*
+
+That works as long as you always have one program per workspace. What if you have multiple windows on the same workspace? What if you want to view your terminal alongside your web browser? Suddenly you can't jump to one of them with one single key press.
+
+Tiling compositors/window managers are great at managing your window layouts, but they don't necessarily make it easier to switch between any two windows.
 
 ## Installation
 
